@@ -1,0 +1,49 @@
+---
+services:
+  snmp_exporter:
+    image: prom/snmp-exporter
+    container_name: snmp-exporter
+    ports:
+      - 9116:9116
+    volumes:
+      - ./config:/etc/snmp_exporter
+    restart: unless-stopped
+    networks:
+      frontend:
+        ipv4_address: 172.19.0.2
+
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - ./prometheus-data:/prometheus
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+    restart: unless-stopped
+    depends_on:
+      - snmp_exporter
+    networks:
+      frontend:
+        ipv4_address: 172.19.0.3
+
+  grafana:
+    image: grafana/grafana-oss:11.3.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      frontend:
+        ipv4_address: 172.19.0.4
+
+networks:
+  frontend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+          gateway: 172.19.0.1
